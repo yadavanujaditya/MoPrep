@@ -1,0 +1,21 @@
+{
+  "name": "quizbackend",
+  "version": "1.0.0",
+  "main": "index.js",
+  "scripts": {
+    "start": "node server.js",
+    "test": "echo \"Error: no test specified\" && exit 1"
+  },
+  "keywords": [],
+  "author": "",
+  "license": "ISC",
+  "description": "",
+  "dependencies": {
+    "axios": "^1.13.2",
+    "cors": "^2.8.5",
+    "csv-parse": "^6.1.0",
+    "express": "^5.2.1",
+    "haryanamo": "file:../HaryanaMo",
+    "mongoose": "^9.0.2"
+  }
+}

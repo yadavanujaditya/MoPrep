@@ -1,0 +1,130 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>HaryanaMo - Premium Medical Quiz</title>
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Outfit:wght@300;400;500;600;700&display=swap" rel="stylesheet">
+    <link rel="stylesheet" href="style.css">
+</head>
+
+<body>
+    <div class="app-container">
+        <!-- Header -->
+        <header class="glass-header">
+            <div class="logo" id="home-logo" style="cursor: pointer;">
+                <span class="logo-icon">🩺</span>
+                <h1>HaryanaMo</h1>
+            </div>
+            <div class="theme-toggle" id="theme-toggle">
+                <span class="toggle-icon">🌙</span>
+            </div>
+        </header>
+
+        <!-- Main Content Area -->
+        <main id="main-content">
+            <!-- VIEW: Home Menu -->
+            <section id="home-view" class="view active-view">
+                <div class="hero-section">
+                    <h2>Welcome to HaryanaMo</h2>
+                    <p>Select your learning path to get started.</p>
+                </div>
+                <div class="menu-grid">
+                    <div class="menu-card" id="btn-prev-year">
+                        <div class="menu-icon">📚</div>
+                        <div class="menu-content">
+                            <h3>Previous Year Paper</h3>
+                            <p>Practice with real exam questions from previous years.</p>
+                        </div>
+                    </div>
+                    <div class="menu-card" id="btn-pro-quiz">
+                        <div class="menu-icon">💎</div>
+                        <div class="menu-content">
+                            <h3>HaryanaMo Pro</h3>
+                            <p>Unlock premium questions and advanced clinical cases.</p>
+                        </div>
+                    </div>
+                </div>
+            </section>
+
+            <!-- VIEW: Year Selection -->
+            <section id="year-selection-view" class="view hidden-view">
+                <div class="quiz-header" style="margin-bottom: 2rem;">
+                    <button id="back-to-home" class="icon-btn">← Back to Menu</button>
+                </div>
+                <div class="hero-section">
+                    <h2 id="view-title">Select Year</h2>
+                    <p id="view-desc">Choose a year to test your knowledge.</p>
+                </div>
+                <div id="years-grid" class="cards-grid">
+                    <!-- Year cards injected here -->
+                    <div class="loader"></div>
+                </div>
+            </section>
+
+            <!-- VIEW: Quiz Interface -->
+            <section id="quiz-view" class="view hidden-view">
+                <div class="quiz-header">
+                    <button id="back-to-years" class="icon-btn">← Back</button>
+                    <div class="progress-container">
+                        <div class="progress-bar">
+                            <div id="progress-fill" class="progress-fill" style="width: 0%"></div>
+                        </div>
+                        <span id="question-tracker">1 / 10</span>
+                    </div>
+                    <div class="score-badge">
+                        Score: <span id="current-score">0</span>
+                    </div>
+                </div>
+
+                <div class="question-card glass-card">
+                    <div class="question-meta">
+                        <span class="year-tag" id="q-year">2020</span>
+                        <span class="category-tag" id="q-category">Anatomy</span>
+                    </div>
+                    <h3 id="question-text">Loading question...</h3>
+                    <div id="options-container" class="options-list">
+                        <!-- Options injected here -->
+                    </div>
+
+                    <div id="feedback-area" class="feedback" style="display: none;">
+                        <div class="feedback-content">
+                            <span id="feedback-icon"></span>
+                            <p id="feedback-text"></p>
+                        </div>
+                        <div class="explanation" id="explanation-text"></div>
+                        <button id="next-btn" class="primary-btn">Next Question →</button>
+                    </div>
+                </div>
+            </section>
+
+            <!-- VIEW: Results -->
+            <section id="results-view" class="view hidden-view">
+                <div class="results-card glass-card">
+                    <div class="results-icon">🏆</div>
+                    <h2>Quiz Completed!</h2>
+                    <div class="score-display">
+                        <span id="final-score">0</span>
+                        <span class="total-score">/ <span id="total-questions">0</span></span>
+                    </div>
+                    <p id="performance-msg">Great job!</p>
+                    <div class="action-buttons">
+                        <button id="retry-btn" class="secondary-btn">Try Again</button>
+                        <button id="home-btn" class="primary-btn">Back to Home</button>
+                    </div>
+                </div>
+            </section>
+        </main>
+
+        <footer>
+            <p>&copy; 2026 HaryanaMo. Designed for Excellence. | <a href="admin.html"
+                    style="color: inherit; text-decoration: none; opacity: 0.5;">Admin Login</a></p>
+        </footer>
+    </div>
+    <script src="app.js"></script>
+</body>
+
+</html>
