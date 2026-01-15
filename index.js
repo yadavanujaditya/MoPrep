@@ -20,6 +20,11 @@ app.use(express.static('public'));
 // Google Sheet CSV Publish URL
 const SHEET_CSV_URL = 'https://docs.google.com/spreadsheets/d/e/2PACX-1vS2XBDgArRwbSDeYrFOS4gj3pwWafbCV8_RHGd3v9tb_9S35ApQEzG43pvR6KX-zHaiucsQ0iXClaI0/pub?output=csv';
 
+// Cache configuration
+let cachedData = null;
+let lastFetchTime = 0;
+const CACHE_TTL = 5 * 60 * 1000; // 5 minutes in milliseconds
+
 const fs = require('fs');
 const VISITS_FILE = path.join(__dirname, 'visits.json');
 
@@ -47,6 +52,17 @@ async function getQuestions(forceRefresh = false) {
         return cachedData;
     }
 
+    console.log('Loading base data from data.json...');
+    let baseData = [];
+    try {
+        const dataPath = path.join(__dirname, 'data.json');
+        if (fs.existsSync(dataPath)) {
+            baseData = JSON.parse(fs.readFileSync(dataPath, 'utf8'));
+        }
+    } catch (e) {
+        console.error("Error reading base data.json:", e.message);
+    }
+
     console.log('Fetching fresh data from Google Sheets...');
     try {
         const response = await axios.get(SHEET_CSV_URL);
@@ -58,47 +74,77 @@ async function getQuestions(forceRefresh = false) {
             skip_empty_lines: true
         });
 
-        // Transform to App format
-        const transformed = records.map(record => ({
-            id: record.id,
-            year: parseInt(record.year) || 0,
-            question_text: record.question_text,
-            options: {
-                A: record.option_A,
-                B: record.option_B,
-                C: record.option_C,
-                D: record.option_D
-            },
-            correct_answer: record.correct_answer,
-            explanation: record.explanation,
-            tags: record.tags ? record.tags.split('|').map(t => t.trim()).filter(Boolean) : []
-        }));
+        // Transform to App format - be robust with header names
+        const sheetQuestions = records.map(record => {
+            const getField = (possibleNames) => {
+                const key = Object.keys(record).find(k => possibleNames.includes(k.toLowerCase().trim()));
+                return key ? record[key] : '';
+            };
 
-        cachedData = transformed;
+            return {
+                id: getField(['id']),
+                year: parseInt(getField(['year'])) || 0,
+                question_text: getField(['question_text', 'questiontext']),
+                options: {
+                    A: getField(['option_a', 'option_A']),
+                    B: getField(['option_b', 'option_B']),
+                    C: getField(['option_c', 'option_C']),
+                    D: getField(['option_d', 'option_D'])
+                },
+                correct_answer: (getField(['correct_answer', 'correctanswer']) || '').trim().toUpperCase(),
+                explanation: getField(['explanation']),
+                tags: (getField(['tags']) || '').split('|').map(t => t.trim()).filter(Boolean)
+            };
+        });
+
+        // Smart Merger: Start with base data, then overwrite/add questions from Sheet
+        // Create a map by ID for faster lookup
+        const mergedMap = new Map();
+        baseData.forEach(q => {
+            if (q && q.id !== undefined && q.id !== null) {
+                mergedMap.set(q.id.toString(), q);
+            }
+        });
+
+        sheetQuestions.forEach(sq => {
+            if (!sq || sq.id === undefined || sq.id === null || sq.id === '') return;
+            const sqId = sq.id.toString();
+            const existing = mergedMap.get(sqId);
+            if (existing) {
+                // Merge: Only overwrite if the sheet has content
+                const merged = { ...existing };
+                if (sq.question_text) merged.question_text = sq.question_text;
+                if (sq.year) merged.year = sq.year;
+                if (sq.correct_answer) merged.correct_answer = sq.correct_answer;
+                if (sq.explanation) merged.explanation = sq.explanation;
+                if (sq.tags && sq.tags.length > 0) merged.tags = sq.tags;
+
+                // Only overwrite options if they are NOT empty in the sheet
+                if (sq.options.A) merged.options.A = sq.options.A;
+                if (sq.options.B) merged.options.B = sq.options.B;
+                if (sq.options.C) merged.options.C = sq.options.C;
+                if (sq.options.D) merged.options.D = sq.options.D;
+
+                mergedMap.set(sqId, merged);
+            } else {
+                // New question from sheet
+                mergedMap.set(sqId, sq);
+            }
+        });
+
+        const mergedList = Array.from(mergedMap.values());
+        cachedData = mergedList;
         lastFetchTime = now;
-        console.log(`Loaded ${transformed.length} questions from Sheets.`);
-        return transformed;
+        console.log(`Successfully merged Sheet data. Total questions: ${mergedList.length}`);
+        return mergedList;
 
     } catch (err) {
         console.error('Error fetching/parsing Sheets data:', err.message);
-
-        // Fallback to local data.json
-        try {
-            const dataPath = path.join(__dirname, 'data.json');
-            if (fs.existsSync(dataPath)) {
-                console.log('Falling back to local data.json...');
-                const localData = JSON.parse(fs.readFileSync(dataPath, 'utf8'));
-                cachedData = localData;
-                lastFetchTime = now; // Mark as "fetched" to avoid immediate retry
-                return localData;
-            }
-        } catch (localErr) {
-            console.error('Error reading local data.json:', localErr.message);
-        }
-
-        if (cachedData) {
-            console.warn('Returning stale cache due to fetch error.');
-            return cachedData;
+        if (baseData.length > 0) {
+            console.log('Using local data.json despite Sheet fetch error.');
+            cachedData = baseData;
+            lastFetchTime = now;
+            return baseData;
         }
         throw err;
     }
