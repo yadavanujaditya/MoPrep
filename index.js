@@ -20,12 +20,23 @@ app.use(express.static('public'));
 // Google Sheet CSV Publish URL
 const SHEET_CSV_URL = 'https://docs.google.com/spreadsheets/d/e/2PACX-1vS2XBDgArRwbSDeYrFOS4gj3pwWafbCV8_RHGd3v9tb_9S35ApQEzG43pvR6KX-zHaiucsQ0iXClaI0/pub?output=csv';
 
-// Cache configuration
-let cachedData = null;
-let lastFetchTime = 0;
-const CACHE_TTL = 5 * 60 * 1000; // 5 minutes in milliseconds
-
 const fs = require('fs');
+const VISITS_FILE = path.join(__dirname, 'visits.json');
+
+// Initialize visits file if not exists
+if (!fs.existsSync(VISITS_FILE)) {
+    fs.writeFileSync(VISITS_FILE, JSON.stringify({ total: 0, sessions: 0, lastReset: new Date().toISOString() }));
+}
+
+function logVisit() {
+    try {
+        const data = JSON.parse(fs.readFileSync(VISITS_FILE, 'utf8'));
+        data.total += 1;
+        fs.writeFileSync(VISITS_FILE, JSON.stringify(data));
+    } catch (e) {
+        console.error("Error logging visit:", e.message);
+    }
+}
 
 // Helper: Fetch and Parse Data
 async function getQuestions(forceRefresh = false) {
@@ -93,9 +104,14 @@ async function getQuestions(forceRefresh = false) {
     }
 }
 
-// Logs for debugging
+// Logs for debugging and tracking
 app.use((req, res, next) => {
     console.log(`${new Date().toISOString()} - ${req.method} ${req.url}`);
+
+    // Track visits to the main app or specific assets
+    if (req.url === '/' || req.url === '/index.html' || req.url.startsWith('/api/')) {
+        logVisit();
+    }
     next();
 });
 
@@ -192,6 +208,16 @@ const READ_ONLY_MSG = "Database is now managed via Google Sheets. Is read only m
 app.post('/api/admin/verify-json', requireAuth, (req, res) => res.status(400).json({ error: READ_ONLY_MSG }));
 app.post('/api/admin/import-json', requireAuth, (req, res) => res.status(400).json({ error: READ_ONLY_MSG }));
 app.post('/api/admin/clear-questions', requireAuth, (req, res) => res.status(400).json({ error: READ_ONLY_MSG }));
+
+// Get Visitor Stats
+app.get('/api/admin/stats', requireAuth, (req, res) => {
+    try {
+        const data = JSON.parse(fs.readFileSync(VISITS_FILE, 'utf8'));
+        res.json(data);
+    } catch (e) {
+        res.status(500).json({ error: "Failed to load stats" });
+    }
+});
 
 // Start server
 const PORT = process.env.PORT || 3000;

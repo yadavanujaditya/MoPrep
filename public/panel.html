@@ -163,6 +163,10 @@
                 <div class="stat-number" id="totalYears">-</div>
                 <div class="stat-label">Different Years</div>
             </div>
+            <div class="stat-card" style="background: #8e44ad;">
+                <div class="stat-number" id="totalVisits">-</div>
+                <div class="stat-label">Total API Hits / Visits</div>
+            </div>
         </div>
 
         <div class="section" style="border: 2px solid #3498db; background: #e8f4fd;">
@@ -212,6 +216,13 @@
                 document.getElementById('totalQuestions').innerText = total;
                 document.getElementById('totalYears').innerText = years.length;
                 document.getElementById('syncTime').innerText = 'Last synced: ' + new Date().toLocaleTimeString();
+
+                // Fetch Visitor Stats
+                const statsRes = await fetch('/api/admin/stats', {
+                    headers: { 'Authorization': token }
+                });
+                const stats = await statsRes.json();
+                document.getElementById('totalVisits').innerText = stats.total || 0;
             } catch (e) {
                 console.error("Stats error", e);
             }
